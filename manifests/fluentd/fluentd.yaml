@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: fluentd-config
-  namespace: monitoring
+  namespace: observability
 data:
   fluent.conf: |
     <source>
@@ -94,7 +94,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: fluentd
-  namespace: monitoring
+  namespace: observability
   labels:
     app: fluentd
 spec:

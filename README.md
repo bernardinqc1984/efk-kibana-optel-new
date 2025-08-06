@@ -86,7 +86,7 @@ chmod +x install.sh uninstall.sh check-status.sh
 ./check-status.sh
 
 # View ElasticSearch indices
-kubectl port-forward svc/elasticsearch 9200:9200 -n monitoring
+kubectl port-forward svc/elasticsearch 9200:9200 -n observability
 curl http://localhost:9200/_cat/indices
 ```
 
@@ -131,7 +131,7 @@ Imagine you have an e-commerce application with these services:
 ├── uninstall.sh                   # Cleanup script
 ├── check-status.sh                # Status checker
 ├── manifests/
-│   ├── namespace.yaml             # Monitoring namespace
+│   ├── namespace.yaml             # Observability namespace
 │   ├── elasticsearch/             # ElasticSearch deployment
 │   ├── fluentd/                   # Fluentd configuration
 │   ├── jaeger/                    # Jaeger tracing setup
@@ -152,19 +152,19 @@ After installation, access the services:
 
 ### ElasticSearch
 ```bash
-kubectl port-forward svc/elasticsearch 9200:9200 -n monitoring
+kubectl port-forward svc/elasticsearch 9200:9200 -n observability
 # Open http://localhost:9200 in browser
 ```
 
 ### Jaeger UI
 ```bash
-kubectl port-forward svc/jaeger-query 16686:16686 -n monitoring
+kubectl port-forward svc/jaeger-query 16686:16686 -n observability
 # Open http://localhost:16686 in browser
 ```
 
 ### Sample Application
 ```bash
-kubectl port-forward svc/sample-app 8080:8080 -n monitoring
+kubectl port-forward svc/sample-app 8080:8080 -n observability
 # Open http://localhost:8080 in browser
 ```
 
@@ -195,17 +195,17 @@ Edit `configs/fluentd-config.yaml` to add custom log parsing rules for your appl
 
 1. **Pods not starting**: Check resource limits
    ```bash
-   kubectl describe pod <pod-name> -n monitoring
+   kubectl describe pod <pod-name> -n observability
    ```
 
 2. **No logs in ElasticSearch**: Verify Fluentd configuration
    ```bash
-   kubectl logs -f daemonset/fluentd -n monitoring
+   kubectl logs -f daemonset/fluentd -n observability
    ```
 
 3. **Jaeger not receiving traces**: Check OpenTelemetry collector
    ```bash
-   kubectl logs -f deployment/otel-collector -n monitoring
+   kubectl logs -f deployment/otel-collector -n observability
    ```
 
 ## 📚 Learning Resources

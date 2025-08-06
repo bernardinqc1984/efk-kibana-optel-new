@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sample-app
-  namespace: monitoring
+  namespace: observability
   labels:
     app: sample-app
 spec:
@@ -28,7 +28,7 @@ spec:
         - name: OTEL_SERVICE_NAME
           value: "sample-nginx-app"
         - name: OTEL_RESOURCE_ATTRIBUTES
-          value: "service.name=sample-nginx-app,service.version=1.0,deployment.environment=monitoring"
+          value: "service.name=sample-nginx-app,service.version=1.0,deployment.environment=observability"
         resources:
           requests:
             memory: "64Mi"
@@ -67,7 +67,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: sample-app-config
-  namespace: monitoring
+  namespace: observability
 data:
   nginx.conf: |
     events {
@@ -153,7 +153,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: sample-app-html
-  namespace: monitoring
+  namespace: observability
 data:
   index.html: |
     <!DOCTYPE html>
@@ -270,7 +270,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: sample-app
-  namespace: monitoring
+  namespace: observability
   labels:
     app: sample-app
 spec:

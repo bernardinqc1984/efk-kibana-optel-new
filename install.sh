@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-NAMESPACE="monitoring"
+NAMESPACE="observability"
 ELASTICSEARCH_VERSION="8.5.1"
 JAEGER_VERSION="1.41.0"
 
@@ -87,6 +87,38 @@ kubectl port-forward svc/elasticsearch 9200:9200 -n ${NAMESPACE} &
 PORT_FORWARD_PID=$!
 sleep 10
 
+# Set up built-in user passwords
+echo -e "${YELLOW}Setting up ElasticSearch built-in users...${NC}"
+curl -X POST "localhost:9200/_security/user/kibana_system/_password" \
+  -H 'Content-Type: application/json' \
+  -u "elastic:elastic_password" \
+  -d '{"password":"kibana_password"}' || true
+
+# Create a monitoring user for basic access
+curl -X POST "localhost:9200/_security/user/monitoring_user" \
+  -H 'Content-Type: application/json' \
+  -u "elastic:elastic_password" \
+  -d '{
+    "password": "monitoring123",
+    "roles": ["kibana_user", "monitoring_user"],
+    "full_name": "Monitoring User",
+    "email": "monitoring@example.com"
+  }' || true
+
+# Create monitoring role
+curl -X POST "localhost:9200/_security/role/monitoring_user" \
+  -H 'Content-Type: application/json' \
+  -u "elastic:elastic_password" \
+  -d '{
+    "cluster": ["monitor"],
+    "indices": [
+      {
+        "names": ["fluentd-*", "logstash-*", ".kibana*"],
+        "privileges": ["read", "write", "create", "delete", "index", "view_index_metadata"]
+      }
+    ]
+  }' || true
+
 # Create index template
 curl -X PUT "localhost:9200/_index_template/fluentd-logs" \
   -H 'Content-Type: application/json' \
@@ -123,8 +155,17 @@ print_status "Kibana deployment created"
 
 # Wait for Kibana to be ready
 echo -e "${YELLOW}Waiting for Kibana to be ready...${NC}"
-kubectl wait --for=condition=ready pod -l app=kibana -n ${NAMESPACE} --timeout=300s
-print_status "Kibana is ready"
+if kubectl wait --for=condition=ready pod -l app=kibana -n ${NAMESPACE} --timeout=300s 2>/dev/null; then
+    print_status "Kibana is ready"
+else
+    print_warning "Kibana may still be starting, checking status..."
+    RUNNING_PODS=$(kubectl get pods -n ${NAMESPACE} -l app=kibana --no-headers | grep -c "Running" || echo "0")
+    if [ "$RUNNING_PODS" -gt 0 ]; then
+        print_status "Kibana pods are running ($RUNNING_PODS pods)"
+    else
+        print_warning "Kibana pods may still be starting"
+    fi
+fi
 
 # Install Jaeger
 echo -e "\n${BLUE}Installing Jaeger...${NC}"
@@ -162,7 +203,25 @@ echo -e "${YELLOW}Kibana UI:${NC} kubectl port-forward svc/kibana 5601:5601 -n $
 echo -e "${YELLOW}Jaeger UI:${NC} kubectl port-forward svc/jaeger-query 16686:16686 -n ${NAMESPACE}"
 echo -e "${YELLOW}Sample App:${NC} kubectl port-forward svc/sample-app 8080:8080 -n ${NAMESPACE}"
 
+echo -e "\n${GREEN}🔐 Authentication Credentials:${NC}"
+echo -e "${YELLOW}Kibana Login:${NC}"
+echo -e "  Username: ${GREEN}kibana_user${NC}"
+echo -e "  Password: ${GREEN}monitoring123${NC}"
+echo -e "\n${YELLOW}ElasticSearch:${NC}"
+echo -e "  Admin User: ${GREEN}elastic${NC} / ${GREEN}elastic_password${NC}"
+echo -e "  Kibana User: ${GREEN}kibana_user${NC} / ${GREEN}monitoring123${NC}"
+
+echo -e "\n${BLUE}📊 Getting Started:${NC}"
+echo -e "1. Port forward Kibana: ${YELLOW}kubectl port-forward svc/kibana 5601:5601 -n monitoring${NC}"
+echo -e "2. Open browser: ${YELLOW}http://localhost:5601${NC}"
+echo -e "3. ${GREEN}Login with: kibana_user / monitoring123${NC}"
+echo -e "4. Create index pattern: ${YELLOW}fluentd-*${NC}"
+echo -e "5. Generate logs: ${YELLOW}curl http://localhost:8080${NC} (after port-forwarding sample app)"
+
+echo -e "\n${BLUE}🔍 Troubleshooting:${NC}"
 echo -e "\n${BLUE}To check status anytime, run:${NC} ./check-status.sh"
+echo -e "- View logs: ${YELLOW}kubectl logs -l app=<component> -n monitoring${NC}"
+echo -e "- Port conflicts: ${YELLOW}pkill -f port-forward${NC}"
 echo -e "${BLUE}To uninstall everything, run:${NC} ./uninstall.sh"
 
 echo -e "\n${GREEN}Happy monitoring! 📊${NC}"

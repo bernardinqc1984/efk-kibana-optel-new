@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-NAMESPACE="monitoring"
+NAMESPACE="observability"
 
 echo -e "${RED}🗑️  Uninstalling Kubernetes Monitoring Stack${NC}"
 echo -e "${RED}===========================================${NC}"

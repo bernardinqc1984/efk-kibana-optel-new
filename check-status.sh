@@ -15,7 +15,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
-NAMESPACE="monitoring"
+NAMESPACE="observability"
 
 echo -e "${BLUE}📊 Kubernetes Monitoring Stack Status${NC}"
 echo -e "${BLUE}====================================${NC}"
